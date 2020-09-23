@@ -58,6 +58,7 @@ import org.springframework.util.StringUtils;
  * @author Venil Noronha
  * @author Gang Li
  */
+// 实现ImportBeanDefinitionRegistrar接口，重写registerBeanDefinitions方法，可以完成一些bean的注入
 class FeignClientsRegistrar implements ImportBeanDefinitionRegistrar,
 		ResourceLoaderAware, EnvironmentAware {
 
@@ -79,12 +80,16 @@ class FeignClientsRegistrar implements ImportBeanDefinitionRegistrar,
 	@Override
 	public void registerBeanDefinitions(AnnotationMetadata metadata,
 			BeanDefinitionRegistry registry) {
+		// 把FeignClient的全局默认配置注入到容器
 		registerDefaultConfiguration(metadata, registry);
+		// 把标记了@FeignClient的类创建对象注入到容器，针对添加了@FeignClient注解的接口的操作
 		registerFeignClients(metadata, registry);
 	}
 
+	// 把@EnableFeignClients中的defaultConfiguration属性中配置的class类型注入到容器
 	private void registerDefaultConfiguration(AnnotationMetadata metadata,
 			BeanDefinitionRegistry registry) {
+		//
 		Map<String, Object> defaultAttrs = metadata
 				.getAnnotationAttributes(EnableFeignClients.class.getName(), true);
 
@@ -103,6 +108,7 @@ class FeignClientsRegistrar implements ImportBeanDefinitionRegistrar,
 
 	public void registerFeignClients(AnnotationMetadata metadata,
 			BeanDefinitionRegistry registry) {
+		// 定义扫描器，主要是想扫描@FeignClient注解
 		ClassPathScanningCandidateComponentProvider scanner = getScanner();
 		scanner.setResourceLoader(this.resourceLoader);
 
@@ -136,6 +142,7 @@ class FeignClientsRegistrar implements ImportBeanDefinitionRegistrar,
 					new AllTypeFilter(Arrays.asList(filter, annotationTypeFilter)));
 		}
 
+		// 使用扫描器扫描@FeignClient注解标识的类，在basePackages指定的目录扫描，如果不指定的话，那就按照SpringBoot的规则
 		for (String basePackage : basePackages) {
 			Set<BeanDefinition> candidateComponents = scanner
 					.findCandidateComponents(basePackage);
@@ -152,9 +159,11 @@ class FeignClientsRegistrar implements ImportBeanDefinitionRegistrar,
 									FeignClient.class.getCanonicalName());
 
 					String name = getClientName(attributes);
+					// @FeignClient注解有一个配置属性configuration，取出来，注入到容器
 					registerClientConfiguration(registry, name,
 							attributes.get("configuration"));
 
+					// 注入FeignClient客户端对象，这个对象也是controller中使用的对象
 					registerFeignClient(registry, annotationMetadata, attributes);
 				}
 			}
@@ -163,6 +172,9 @@ class FeignClientsRegistrar implements ImportBeanDefinitionRegistrar,
 
 	private void registerFeignClient(BeanDefinitionRegistry registry,
 			AnnotationMetadata annotationMetadata, Map<String, Object> attributes) {
+		// 封装BeanDefinition对象，根据@FeignClient注解中的属性配置，该BeanDefinition对象是FeignClientFactoryBean
+		// 客户端对象是FeignClientFactoryBean，是一个FactoryBean，其实使用的时候从容器中获取到的对象是FeignClientFactoryBean.getObject()返回的对象
+		// 该对象就是对应接口类的代理对象
 		String className = annotationMetadata.getClassName();
 		BeanDefinitionBuilder definition = BeanDefinitionBuilder
 				.genericBeanDefinition(FeignClientFactoryBean.class);

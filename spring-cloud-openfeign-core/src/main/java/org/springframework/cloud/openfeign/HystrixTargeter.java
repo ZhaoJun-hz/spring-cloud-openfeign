@@ -34,6 +34,7 @@ class HystrixTargeter implements Targeter {
 	public <T> T target(FeignClientFactoryBean factory, Feign.Builder feign, FeignContext context,
 						Target.HardCodedTarget<T> target) {
 		if (!(feign instanceof feign.hystrix.HystrixFeign.Builder)) {
+			// 到这，Feign.Builder的target方法
 			return feign.target(target);
 		}
 		feign.hystrix.HystrixFeign.Builder builder = (feign.hystrix.HystrixFeign.Builder) feign;

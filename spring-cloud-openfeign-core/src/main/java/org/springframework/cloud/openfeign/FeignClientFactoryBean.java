@@ -219,10 +219,13 @@ class FeignClientFactoryBean implements FactoryBean<Object>, InitializingBean,
 
 	protected <T> T loadBalance(Feign.Builder builder, FeignContext context,
 			HardCodedTarget<T> target) {
+		// 猜测？最终执行请求的client
 		Client client = getOptional(context, Client.class);
 		if (client != null) {
+			// 使用builder构造器包装client
 			builder.client(client);
 			Targeter targeter = get(context, Targeter.class);
+			// targeter是HystrixTargeter类型
 			return targeter.target(this, builder, context, target);
 		}
 
@@ -232,6 +235,7 @@ class FeignClientFactoryBean implements FactoryBean<Object>, InitializingBean,
 
 	@Override
 	public Object getObject() throws Exception {
+		// 看getTarget()方法
 		return getTarget();
 	}
 
@@ -243,6 +247,8 @@ class FeignClientFactoryBean implements FactoryBean<Object>, InitializingBean,
 		FeignContext context = applicationContext.getBean(FeignContext.class);
 		Feign.Builder builder = feign(context);
 
+		// 判断@FeignClient注解的url属性是否为空，url属性是固定访问某一个实例地址主要做测试使用
+		// url为空的话，那么生成的FeignClient对象就应该是一个带有负载均衡功能的客户端对象，feign + ribbon
 		if (!StringUtils.hasText(this.url)) {
 			if (!this.name.startsWith("http")) {
 				url = "http://" + this.name;

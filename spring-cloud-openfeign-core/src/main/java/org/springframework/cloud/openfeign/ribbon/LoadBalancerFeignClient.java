@@ -58,10 +58,12 @@ public class LoadBalancerFeignClient implements Client {
 			URI asUri = URI.create(request.url());
 			String clientName = asUri.getHost();
 			URI uriWithoutHost = cleanUrl(request.url(), clientName);
+			// 构建Ribbon请求对象
 			FeignLoadBalancer.RibbonRequest ribbonRequest = new FeignLoadBalancer.RibbonRequest(
 					this.delegate, request, uriWithoutHost);
 
 			IClientConfig requestConfig = getClientConfig(options, clientName);
+			// 后续处理，包括负载均衡等
 			return lbClient(clientName).executeWithLoadBalancer(ribbonRequest,
 					requestConfig).toResponse();
 		}
